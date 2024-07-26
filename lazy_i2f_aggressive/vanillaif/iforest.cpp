@@ -11,7 +11,7 @@ using namespace std;
 
 iforest::iforest(const data & dataObject): _dataObject(dataObject){}
 
-iforest::iforest(const data & dataObject, int numiTrees, int sampleSize, int exLevel):_dataObject(dataObject), _numiTrees(numiTrees), _sampleSize(sampleSize), _exLevel(exLevel){
+iforest::iforest(const data & dataObject,const int numiTrees, int sampleSize):_dataObject(dataObject), _numiTrees(numiTrees), _sampleSize(sampleSize){
 	_numInstances = _dataObject.getnumInstances();
 	_maxTreeHeight = (int)log2(_sampleSize);
 	_maxNumOfNodes = (int)pow(2.0,_maxTreeHeight+1)-1;
@@ -27,12 +27,11 @@ iforest::~iforest(){}
 
 //***************************************************STATIC iForest creation***************************************************************//
 void iforest::constructiForest(){
-	std::random_device random_seed_generator;
-
+	
     for(int treeId = 0; treeId < _numiTrees; treeId++){
 		//cout<<"treeId===="<<treeId<<endl;
-		_iTrees[treeId] = new itree(_dataObject, _sampleSize, _maxTreeHeight, _maxNumOfNodes, _avgPLEstimationOfBST, _exLevel);
-		_iTrees[treeId]->constructiTree(random_seed_generator());
+		_iTrees[treeId] = new itree(_dataObject, _sampleSize, _maxTreeHeight, _maxNumOfNodes, _avgPLEstimationOfBST);
+		_iTrees[treeId]->constructiTree();
 	}
 	//_avgPLComputationOfBST = avgPathLengthComputationOfBST();
 }
@@ -58,7 +57,7 @@ void iforest::constructINCiForest(int updateSampleSize,data &refdeltaD){
 	for(int treeId = 0; treeId < _numiTrees; treeId++){
 	 //cout<<"treeId========================================================="<<treeId<<endl;
 		//cout<<"updateSampleSize="<<updateSampleSize<<endl;
-		_iTrees[treeId]->insertUpdatesIniTree(updateSampleSize, random_seed_generator(),refdeltaD);
+		_iTrees[treeId]->insertUpdatesIniTree(updateSampleSize, refdeltaD);
 	}
 	//_avgPLComputationOfBST = avgPathLengthComputationOfBST();
 		
@@ -125,7 +124,7 @@ void iforest::readFOREST(const string & FORESTFile){
     boost::archive::binary_iarchive readNodesArchive(readNodes);
     _iTrees.resize(_numiTrees);
     for(int treeId = 0; treeId < _numiTrees; treeId++){
-    	_iTrees[treeId] = new itree(_dataObject,_sampleSize,_maxTreeHeight,_maxNumOfNodes,_avgPLEstimationOfBST, _exLevel);
+    	_iTrees[treeId] = new itree(_dataObject,_sampleSize,_maxTreeHeight,_maxNumOfNodes,_avgPLEstimationOfBST);
     	
     	treenode *rootNode = new treenode();
     	readNodesArchive >> *(rootNode);

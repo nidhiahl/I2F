@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include "./vanillaif/data.cpp"
-#include "./vanillaif/iforest.cpp"
+#include "./eif/data.cpp"
+#include "./eif/iforest.cpp"
 
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]){
     	struct timespec start_aggressive,end_aggressive;
    		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_aggressive);
 
-		//iforest *Fi = new iforest(refDi, numOfTrees, Di_ss,5);
-		iforest *Fi = new iforest(refDi, numOfTrees, Di_ss);
+		iforest *Fi = new iforest(refDi, numOfTrees, Di_ss,5);
+		//iforest *Fi = new iforest(refDi, numOfTrees, Di_ss);
 		Fi->constructiForest();
 		
 		//cout<<"update "<<update<<"done"<<endl;
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]){
    		}
 		
 		//write aggressive_AS_D0();
-		ofstream outAnomalyScoreD0("../io_directory/aggressive_AS_Di.csv", ios::out|ios::binary);
+		ofstream outAnomalyScoreD0("../io_directory/eif_aggressive_AS_Di.csv", ios::out|ios::binary);
     	//outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
     	int numAttributes = Di->getnumAttributes();
     	for(int pointi = 0; pointi < previousD_numInstances; pointi++){
@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
 		
 		
 		//write aggressive_AS_deltaD();
-		ofstream outAnomalyScoredeltaD("../io_directory/aggressive_AS_deltaD.csv", ios::out|ios::binary);
+		ofstream outAnomalyScoredeltaD("../io_directory/eif_aggressive_AS_deltaD.csv", ios::out|ios::binary);
     	//outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
     	//int numAttributes = Di->getnumAttributes();
     	for(int pointi = previousD_numInstances; pointi < Di_numInstances; pointi++){

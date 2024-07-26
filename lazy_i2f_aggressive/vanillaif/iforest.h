@@ -9,7 +9,7 @@ class iforest
     public:
 	//iforest();
     iforest(const data &);                              //used for: create an empty forest followed by reading the history in blank forest
-	iforest(const data &, int, int, int);                    //used for: create a forest and initialize _sampleSize and _numiTrees
+	iforest(const data &, int , int);                    //used for: create a forest and initialize _sampleSize and _numiTrees
     virtual ~iforest();
     void constructiForest();    						//used for creating an iForest (static vesion) 
     void constructINCiForest(int,data &);      				//used for: create an i^2Forest (incremental iforest version of iForest)
@@ -32,8 +32,7 @@ class iforest
     int _maxTreeHeight;									//max Height of each iTree in iForest.
   	int _maxNumOfNodes;									//max number of node possible in each iTree.
 	int _avgPLEstimationOfBST;							//average path length estimation of BST having '_sampleSize' number of nodes. 
-	int _exLevel;
-    const data & _dataObject;							//reference of the input dataObject, only a container not responsible for deletion of the object.
+	const data & _dataObject;							//reference of the input dataObject, only a container not responsible for deletion of the object.
 	vector<itree*> _iTrees;								//list of pointers to the iTrees in the forest.
 	    
     
@@ -46,7 +45,6 @@ class iforest
   		ar & _maxNumOfNodes;
 		ar & _numiTrees;
 		ar & _avgPLEstimationOfBST;
-        ar & _exLevel;
 	}
 };
 

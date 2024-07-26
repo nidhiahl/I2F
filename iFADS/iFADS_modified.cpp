@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	
 	const string update_type = argv[5];
 	
-	const int & anomlayrate = atoi(argv[6]);
+	const double & anomlayrate = atof(argv[6]);
 	
 	/************************************************D0 dataPreparation******************************************************************/
 	
@@ -81,6 +81,28 @@ int main(int argc, char* argv[])
 	iforest *F0 = new iforest(refD0, numOfTrees, D0_ss);
 	F0->constructiForest();
 	
+	double anomaly_rate=anomlayrate;
+	
+    vector<pair<double, int>> AnomalyScores;
+    //vector<double> AnomalyScore;
+
+    
+    F0->anomalyScore.clear();
+    AnomalyScores.clear();
+    long double temp_ascore;
+    for(int pointi=0; pointi<D0_numInstances; pointi++)
+    {
+	     temp_ascore = F0->computeAnomalyScore(pointi, refD0);
+         AnomalyScores.push_back({temp_ascore, pointi});
+    }
+    sort(AnomalyScores.begin(), AnomalyScores.end());
+    reverse(AnomalyScores.begin(), AnomalyScores.end());
+	
+	//cout<<"anomaly_rate*D0_numInstances="<<anomaly_rate*D0_numInstances<<" ";
+	//cout<<"AnomalyScores[0].first="<<AnomalyScores[0].first<<" ";
+	//cout<<"AnomalyScores[int(anomaly_rate*D0_numInstances)].first="<<AnomalyScores[int(anomaly_rate*D0_numInstances)].first<<" ";
+	double ascore_threshold= AnomalyScores[int(anomaly_rate*D0_numInstances)].first;
+	//cout<<"ascore_threshold="<<ascore_threshold<<" ";
 	
 	/************************************************deltaD dataPreparation**********************************************************/
 	int update =1;
@@ -98,36 +120,20 @@ int main(int argc, char* argv[])
     struct timespec start_iFADS,end_iFADS;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_iFADS);
 	
-	double anomaly_rate=anomlayrate;
-	
-    vector<pair<double, int>> AnomalyScores;
     vector<double> AnomalyScore;
-
-    int actualAnomalies=0;
-    int truePositives=0;
     F0->anomalyScore.clear();
     AnomalyScores.clear();
-    long double temp_ascore;
+    int predicted_anomalies = 0;
     for(int pointi=0; pointi<deltaD_numInstances; pointi++)
-    {
-	     temp_ascore = F0->computeAnomalyScore(pointi, refdeltaD);
-         AnomalyScores.push_back({temp_ascore, pointi});
+    {	
+    	double as = F0->computeAnomalyScore(pointi, refdeltaD);
+    	//cout<<"AS="<<as<<" ";
+    	if(as>=ascore_threshold){
+    		predicted_anomalies++;
+    	}
     }
-    sort(AnomalyScores.begin(), AnomalyScores.end());
-    reverse(AnomalyScores.begin(), AnomalyScores.end());
-
-    for(pair<double, int> tmp: AnomalyScores)
-    {
-	    if(refdeltaD.dataVector[tmp.second]->label == 1) actualAnomalies++;
-	}
-
-    for(int i=0; i<actualAnomalies; i++)
-    {
-    	if(refdeltaD.dataVector[AnomalyScores[i].second]->label == 1) truePositives++;
-    }
-
-    if(truePositives > anomaly_rate*deltaD_numInstances)
-    {
+    cout<<"predicted_anomalies/deltaD_numInstances="<<float(predicted_anomalies)/float(deltaD_numInstances)<<"---anomaly_rate="<<anomaly_rate;
+    if(float(predicted_anomalies)/float(deltaD_numInstances) > anomaly_rate){
     	delete F0;
         F0 = new iforest(refdeltaD, numOfTrees, deltaD_ss);
 		F0->constructiForest();

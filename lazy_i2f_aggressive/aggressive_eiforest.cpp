@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include "./vanillaif/data.cpp"
-#include "./vanillaif/iforest.cpp"
+#include "./eif/data.cpp"
+#include "./eif/iforest.cpp"
 
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]){
     	struct timespec start_aggressive,end_aggressive;
    		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_aggressive);
 
-		//iforest *Fi = new iforest(refDi, numOfTrees, Di_ss,5);
-		iforest *Fi = new iforest(refDi, numOfTrees, Di_ss);
+		iforest *Fi = new iforest(refDi, numOfTrees, Di_ss,5);
+		//iforest *Fi = new iforest(refDi, numOfTrees, Di_ss);
 		Fi->constructiForest();
 		
 		//cout<<"update "<<update<<"done"<<endl;

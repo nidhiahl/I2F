@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include "./vanillaif/data.cpp"
-#include "./vanillaif/iforest.cpp"
+#include "./eif/data.cpp"
+#include "./eif/iforest.cpp"
 
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -40,8 +40,8 @@ int main(int argc, char* argv[]){
 	int D0_numInstances = D0->getnumInstances();
 	D0_ss = D0_numInstances * samplingFactor < minSampleSize ? minSampleSize : D0_numInstances * samplingFactor;
     D0_ss = D0_numInstances < D0_ss ? D0_numInstances : D0_ss;
-	//iforest *F0 = new iforest(refD0, numOfTrees, D0_ss,5);
-	iforest *F0 = new iforest(refD0, numOfTrees, D0_ss);
+	iforest *F0 = new iforest(refD0, numOfTrees, D0_ss,5);
+	//iforest *F0 = new iforest(refD0, numOfTrees, D0_ss);
 	F0->constructiForest();
 	
 	//evlauate D0 over F0;
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]){
    	}
    	
    	//write lazy_AS_D0();
-	ofstream outAnomalyScore_lazyD0("../io_directory/lazy_AS_Di.csv", ios::out|ios::binary);
+	ofstream outAnomalyScore_lazyD0("../io_directory/eif_lazy_AS_Di.csv", ios::out|ios::binary);
     //outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
     for(int pointi = 0; pointi < D0_numInstances; pointi++){
     	outAnomalyScore_lazyD0<<pointi<<" "<<AnomalyScore[pointi]<<" "<<refD0.dataVector[pointi]->label<<endl;	
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
     		AnomalyScore.push_back(F0->computeAnomalyScore(pointi, refdeltaD));
    		}
 		//write lazy_AS_deltaD();
-		ofstream outAnomalyScore_lazydeltaD("../io_directory/lazy_AS_deltaD.csv", ios::out|ios::binary);
+		ofstream outAnomalyScore_lazydeltaD("../io_directory/eif_lazy_AS_deltaD.csv", ios::out|ios::binary);
     	//outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
    		for(int pointi = 0; pointi < deltaD_numInstances; pointi++){
     		outAnomalyScore_lazydeltaD<<pointi<<" "<<AnomalyScore[pointi]<<" "<<refdeltaD.dataVector[pointi]->label<<endl;	
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]){
    		}
 		
 		//write inc_AS_deltaD();
-		ofstream outAnomalyScore_incdeltaD("../io_directory/i2f_AS_deltaD.csv", ios::out|ios::binary);
+		ofstream outAnomalyScore_incdeltaD("../io_directory/eif_i2f_AS_deltaD.csv", ios::out|ios::binary);
 		//ofstream outAnomalyScore("io_directory/inc_AS_deltaD"+to_string(update)+".csv", ios::app|ios::binary);
     	//outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
     	for(int pointi = 0; pointi < deltaD_numInstances; pointi++){
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]){
    		}
 		
 		//write inc_AS_D0();
-		ofstream outAnomalyScore_incD0("../io_directory/i2f_AS_Di.csv", ios::out|ios::binary);
+		ofstream outAnomalyScore_incD0("../io_directory/eif_i2f_AS_Di.csv", ios::out|ios::binary);
 		//ofstream outAnomalyScore("io_directory/inc_AS_deltaD"+to_string(update)+".csv", ios::app|ios::binary);
     	//outAnomalyScore<<"pointId "<<"anomalyscore "<<"actuallabel"<<endl;
     	for(int pointi = 0; pointi < D0_numInstances; pointi++){

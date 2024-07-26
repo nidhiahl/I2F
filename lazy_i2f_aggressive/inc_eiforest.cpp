@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include "./vanillaif/data.cpp"
-#include "./vanillaif/iforest.cpp"
+#include "./eif/data.cpp"
+#include "./eif/iforest.cpp"
 
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -40,8 +40,8 @@ int main(int argc, char* argv[]){
 	int D0_numInstances = D0->getnumInstances();
 	D0_ss = D0_numInstances * samplingFactor < minSampleSize ? minSampleSize : D0_numInstances * samplingFactor;
     D0_ss = D0_numInstances < D0_ss ? D0_numInstances : D0_ss;
-	//iforest *F0 = new iforest(refD0, numOfTrees, D0_ss,5);
-	iforest *F0 = new iforest(refD0, numOfTrees, D0_ss);
+	iforest *F0 = new iforest(refD0, numOfTrees, D0_ss,5);
+	//iforest *F0 = new iforest(refD0, numOfTrees, D0_ss);
 	F0->constructiForest();
 	
 	//evlauate D0 over F0;

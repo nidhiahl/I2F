@@ -5,28 +5,18 @@
 
 
 //inner product of two vectors
-inline double inner_product(double* curr, std::vector<double>& normal_vector)
-{
-    double result=0.0;
-    for(int i=0;i<normal_vector.size();i++) result+=((double) curr[i])*normal_vector[i];
-    return result;
-}
-
 
 itree::itree(const data & dataObject): _dataObject(dataObject){}
 
-itree::itree(const data & dataObject, int sampleSize, int maxTreeHeight, int maxNumOfNodes, int avgPLEstimation, int exLevel): _dataObject(dataObject), _sampleSize(sampleSize), _maxTreeHeight(maxTreeHeight), _maxNumOfNodes(maxNumOfNodes), _exLevel(exLevel){}
+itree::itree(const data & dataObject, int sampleSize, int maxTreeHeight, int maxNumOfNodes, int avgPLEstimation): _dataObject(dataObject), _sampleSize(sampleSize), _maxTreeHeight(maxTreeHeight), _maxNumOfNodes(maxNumOfNodes){}
 
 itree::~itree(){}
 //*************************************************STATIC iTree creation*******************************************************************//
-void itree::constructiTree(int random_seed){
+void itree::constructiTree(){
     rootNode = new treenode(0);
     rootNode->dataPointIndices = _dataObject.getSample(_sampleSize);
-    std::random_device random_seed_generator;
-
-	queue<treenode*> BFTforNodes;
+    queue<treenode*> BFTforNodes;
     BFTforNodes.push(rootNode);
-
     while(!BFTforNodes.empty()){
     	treenode *currNode = BFTforNodes.front();
 		BFTforNodes.pop();
@@ -40,19 +30,17 @@ void itree::constructiTree(int random_seed){
         		currNode->dataPointIndices.resize(0);
     		}
     		else{
-    			currNode->splitValue = currNode->splitInfoSelection(_dataObject, _exLevel, random_seed_generator()+random_seed);
+    			currNode->splitValue = currNode->splitInfoSelection(_dataObject);
     			currNode->createLeftChild();
 				currNode->createRightChild();
 				for(int i=0; i<currNode->nodeSize; i++){     
-            		double currdotn = inner_product(_dataObject.dataVector[currNode->dataPointIndices[i]]->attributes, currNode->normal_vector);
-					currNode->maximumVal=max(currNode->maximumVal, currdotn);
-					currNode->minimumVal=min(currNode->minimumVal, currdotn);
-					if(currdotn < currNode->splitValue){
-						currNode->lChildAdd->dataPointIndices.push_back(currNode->dataPointIndices[i]);
-					}
-					else{
-						currNode->rChildAdd->dataPointIndices.push_back(currNode->dataPointIndices[i]);
-					}
+            		if(_dataObject.dataVector[currNode->dataPointIndices[i]]->attributes[currNode->splitAttribute]<currNode->splitValue){
+                		currNode->lChildAdd->dataPointIndices.push_back(currNode->dataPointIndices[i]);
+            		}
+            		else{
+                		currNode->rChildAdd->dataPointIndices.push_back(currNode->dataPointIndices[i]);
+            		}
+
         		}
         		
         		currNode->dataPointIndices.clear();
@@ -70,8 +58,7 @@ long double itree::computePathLength(int pointX, const data & testDataObject){
 	treenode * node = rootNode;
 	while(!node->isLeaf){
 		pathLength++;
-		double pointxdotn = inner_product(testDataObject.dataVector[pointX]->attributes, node->normal_vector);
-		if(pointxdotn < node->splitValue){
+		if(testDataObject.dataVector[pointX]->attributes[node->splitAttribute] < node->splitValue){
 			node = node->lChildAdd;
 		}else{
 			node = node->rChildAdd;
@@ -90,8 +77,7 @@ long double itree::computeRelativeMass(int pointX, const data & testDataObject){
 	while(!node->isLeaf){
 		parSize=node->nodeSize;
 
-		double pointxdotn = inner_product(testDataObject.dataVector[pointX]->attributes, node->normal_vector);
-		if(pointxdotn < node->splitValue){
+		if(testDataObject.dataVector[pointX]->attributes[node->splitAttribute] < node->splitValue){
 			node = node->lChildAdd;
 		}else{
 			node = node->rChildAdd;
@@ -115,11 +101,13 @@ long double itree::pathLengthEstimationForUnbuiltTree(int nodeSize){
 
 //***************************************************Incremental iTree creation************************************************************//
 
-void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & refdeltaD){
+void itree::insertUpdatesIniTree(int updateSampleSize,data & refdeltaD){
+	
+	
+	
 	//rootNode->updateIndices = _dataObject.getSample(updateSampleSize);
     rootNode->updateIndices = refdeltaD.getSample(updateSampleSize);
-    std::random_device random_seed_generator;
-	//cout<<"rootNode->updateIndices.size()"<<rootNode->updateIndices.size()<<endl;
+    //cout<<"rootNode->updateIndices.size()"<<rootNode->updateIndices.size()<<endl;
 	queue<treenode*> BFTforNodes;
 	BFTforNodes.push(rootNode);
 	while(!BFTforNodes.empty()){ 	
@@ -147,7 +135,7 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 				deleteSubTree(currNode->rChildAdd);
 				currNode->rChildAdd = nullptr;
 				currNode->isLeaf = bool(1);
-				currNode->normal_vector.resize(0);
+				currNode->splitAttribute = -1;
 				currNode->lChildId = -1;
 				currNode->rChildId = -1;
 				currNode->updateIndices.clear();
@@ -159,25 +147,19 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
     		//cout<<"Leaf:currNode->nodeId="<<currNode->nodeId<<endl;
 			if(currNode->updateIndices.size()>1){                                   /*CASE 3a:leaf needs split*/
 				//cout<<"leaf splits"<<endl;
-				currNode->splitValue = currNode->splitInfoSelectionForUpdates(refdeltaD, _exLevel,  random_seed_generator()+random_seed);
+				currNode->splitValue = currNode->splitInfoSelectionForUpdates(refdeltaD);
     			currNode->createLeftChild();
     			currNode->lChildAdd->isLeaf = bool(1);
 				currNode->createRightChild();
 				currNode->rChildAdd->isLeaf = bool(1);
 				currNode->isLeaf = bool(0);
 				for(int i=0; i<currNode->updateIndices.size(); i++){     
-           		 	double currdotn = inner_product(refdeltaD.dataVector[currNode->updateIndices[i]]->attributes, currNode->normal_vector);
-					currNode->maximumVal=max(currNode->maximumVal, currdotn);
-					currNode->minimumVal=min(currNode->minimumVal, currdotn);
-					if(currdotn < currNode->splitValue){
-						//cout<<"lChildAdd->updateIndices.size()-before"<<currNode->lChildAdd->updateIndices.size();
-						currNode->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-						//cout<<"-after"<<currNode->lChildAdd->updateIndices.size();
-						
-					}
-					else{
-						currNode->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-					}
+           		 	if(_dataObject.dataVector[currNode->updateIndices[i]]->attributes[currNode->splitAttribute]<currNode->splitValue){
+           	    		currNode->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 	}
+            		else{
+           	    		currNode->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 	}
        			}
 				
        			BFTforNodes.push(currNode->lChildAdd);
@@ -190,7 +172,6 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 		else{                                           //*CASE 4: Nonleaf nodes*/
 			//cout<<"Non-leaf:currNode->nodeId="<<currNode->nodeId<<endl;
 			//cout<<"currNode->updateIndices.size()"<<currNode->updateIndices.size()<<endl;
-			double mn=999999.0, mx=-999999.0;
 			currNode->lChildAdd->updateIndices.clear();
 			currNode->lChildAdd->updateIndices.resize(0);
 			currNode->rChildAdd->updateIndices.clear();
@@ -198,13 +179,11 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 			
 			for(int i=0; i<currNode->updateIndices.size(); i++){ 
 				//cout<<  "currNode->updateIndices["<<i<<"]"<<currNode->updateIndices[i]<<endl;  
-				double currdotn = inner_product(refdeltaD.dataVector[currNode->updateIndices[i]]->attributes, currNode->normal_vector);
-				mx=max(mx, currdotn);
-				mn=min(mn, currdotn);
-				if(currdotn < currNode->splitValue){
-					//cout<<"lChildAdd->updateIndices.size()-before"<<currNode->lChildAdd->updateIndices.size();	
+				
+				if(_dataObject.dataVector[currNode->updateIndices[i]]->attributes[currNode->splitAttribute]<currNode->splitValue){
+       	    		//cout<<"lChildAdd->updateIndices.size()-before"<<currNode->lChildAdd->updateIndices.size();	
 					currNode->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-					//cout<<"-after"<<currNode->lChildAdd->updateIndices.size()<<endl;
+       		 		//cout<<"-after"<<currNode->lChildAdd->updateIndices.size()<<endl;
 					
 				}
 				else{
@@ -217,19 +196,20 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 			//cout<<"Non-leaf:currNode->nodeId="<<currNode->nodeId<<endl;
 			
 			// currNode->newMinMaxSelection(refdeltaD, &min, &max);
+			double min, max;
+			currNode->newMinMaxSelection(_dataObject, &min, &max);
 			currNode->updateIndices.clear();
 			currNode->updateIndices.resize(0);
 			
-			if(mn >= currNode->minimumVal && mx <= currNode->maximumVal){               //*CASE 4a: min-max range unchanged*/
+			if(min >= currNode->minimumVal && max <= currNode->maximumVal){               //**************CASE 4a: min-max range unchanged*****************************************/
 				//cout<<"Non-leaf-minmax uncahnged"<<endl;
-			
+				
 				BFTforNodes.push(currNode->lChildAdd);
 				BFTforNodes.push(currNode->rChildAdd);
 				continue;
 			}
-
-			if(currNode->minimumVal>mn){                    //*CASE 4b: min changed- left child needs split*/
-				//cout<<"Non-leaf- min cahnged"<<endl;
+			
+			if(currNode->minimumVal>min){                    //**************************CASE 4b: min changed- left child needs split**************************************************/
 				if(currNode->lChildAdd->isLeaf){
 					BFTforNodes.push(currNode->lChildAdd);
 				}
@@ -241,11 +221,11 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 					nodeP->updateIndices = currLC->updateIndices;
 					nodeP->nodeSize = nodeP->updateIndices.size() + currLC->nodeSize;
 					nodeP->pathLengthEst = pathLengthEstimationForUnbuiltTree(nodeP->nodeSize);
-					nodeP->normal_vector = currNode->normal_vector;
+					nodeP->splitAttribute = currNode->splitAttribute;
 					nodeP->splitValue = currNode->minimumVal;
-					nodeP->minimumVal = mn;
+					nodeP->minimumVal = min;
 					nodeP->maximumVal = currLC->maximumVal;
-					currNode->minimumVal = mn;
+					currNode->minimumVal = min;
 					nodeLC->isLeaf = bool(1);
 					nodeLC->parentAdd = nodeP;
 					nodeP->lChildAdd = nodeLC;
@@ -260,28 +240,24 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 					currLC->nodeHeight = (int)log2(currLC->nodeId+1)+1;
 					currLC->updateIndices.resize(0);
 					currNode->lChildAdd = nodeP;
-
+					
 					for(int i=0; i<nodeP->updateIndices.size(); i++){     
-						double currdotn = inner_product(refdeltaD.dataVector[nodeP->updateIndices[i]]->attributes, nodeP->normal_vector);
-						nodeP->minimumVal = min(nodeP->minimumVal, currdotn);
-						nodeP->maximumVal = min(nodeP->maximumVal, currdotn);
-						if(currdotn < nodeP->splitValue){
-							nodeP->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-						}
-						else{
-							nodeP->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-						}
-					}
+           		 		if(_dataObject.dataVector[nodeP->updateIndices[i]]->attributes[nodeP->splitAttribute]<nodeP->splitValue){
+           	    			nodeP->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 		}
+            			else{
+           	    			nodeP->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 		}
+       				}
 					BFTforNodes.push(nodeLC);
 					BFTforNodes.push(nodeP->rChildAdd);
 				}
-			}else{
-				//cout<<"else of min changed"<<endl;
-				BFTforNodes.push(currNode->lChildAdd);
-			}
+			}else{BFTforNodes.push(currNode->lChildAdd);}
 			
-			if(currNode->maximumVal<mx){                            //*CASE 4b: min changed- right child needs split*/
-				//cout<<"Non-leaf-max cahnged"<<endl;
+			
+			
+			
+			if(currNode->maximumVal<max){                            //**************************CASE 4b: min changed- right child needs split**************************************************/
 				if(currNode->rChildAdd->isLeaf){
 					BFTforNodes.push(currNode->rChildAdd);
 				}
@@ -293,11 +269,11 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 					nodeP->updateIndices = currNode->rChildAdd->updateIndices;
 					nodeP->nodeSize = nodeP->updateIndices.size() + currRC->nodeSize;
 					nodeP->pathLengthEst = pathLengthEstimationForUnbuiltTree(nodeP->nodeSize);
-					nodeP->normal_vector = currNode->normal_vector;
+					nodeP->splitAttribute = currNode->splitAttribute;
 					nodeP->splitValue = currNode->maximumVal;
 					nodeP->minimumVal = currRC->minimumVal;
-					nodeP->maximumVal = mx;
-					currNode->maximumVal = mx;
+					nodeP->maximumVal = max;
+					currNode->maximumVal = max;
 					nodeRC->isLeaf = bool(1);
 					nodeRC->parentAdd = nodeP;
 					nodeP->rChildAdd = nodeRC;
@@ -314,24 +290,19 @@ void itree::insertUpdatesIniTree(int updateSampleSize, int random_seed,data & re
 					currNode->rChildAdd = nodeP;
 					
 					for(int i=0; i<nodeP->updateIndices.size(); i++){     
-						double currdotn = inner_product(refdeltaD.dataVector[nodeP->updateIndices[i]]->attributes, nodeP->normal_vector);
-						nodeP->minimumVal = min(nodeP->minimumVal, currdotn);
-						nodeP->maximumVal = min(nodeP->maximumVal, currdotn);
-						if(currdotn < nodeP->splitValue){
-							nodeP->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-						}
-						else{
-							nodeP->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
-						}
+           		 		if(_dataObject.dataVector[nodeP->updateIndices[i]]->attributes[nodeP->splitAttribute]<nodeP->splitValue){
+           	    			nodeP->lChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 		}
+            			else{
+           	    			nodeP->rChildAdd->updateIndices.push_back(currNode->updateIndices[i]);
+           		 		}
        				}
-					
 					BFTforNodes.push(nodeP->lChildAdd);
 					BFTforNodes.push(nodeRC);
 				}
-			}else{
-				//cout<<"else of max chnaged"<<endl;
-				BFTforNodes.push(currNode->rChildAdd);
-			}	
+			}else{BFTforNodes.push(currNode->rChildAdd);}
+			
+				
 		}
 		currNode->updateIndices.clear();
 		currNode->updateIndices.resize(0);
